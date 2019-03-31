@@ -1,12 +1,13 @@
-package com.example.SpringBoot_GameOfThrones.util.utilImpl;
+package com.example.homework.util.utilImpl;
 
-import com.example.SpringBoot_GameOfThrones.util.OKHttpGameOfThronesClient;
+import com.example.homework.util.OKHttpGameOfThronesClient;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
+import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-
+@Component
 public class OKHttpGameOfThronesClientImpl implements OKHttpGameOfThronesClient {
     @Override
     public String fetchCharacterData(String requestUrl) throws IOException {

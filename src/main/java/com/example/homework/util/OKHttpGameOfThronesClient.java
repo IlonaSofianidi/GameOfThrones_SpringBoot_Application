@@ -1,4 +1,4 @@
-package com.example.SpringBoot_GameOfThrones.util;
+package com.example.homework.util;
 
 import java.io.IOException;
 
