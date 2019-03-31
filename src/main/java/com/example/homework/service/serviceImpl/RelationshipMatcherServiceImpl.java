@@ -15,6 +15,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.HttpUrl;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheConfig;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -27,6 +29,7 @@ import java.util.regex.Pattern;
 
 @Slf4j
 @Service
+@CacheConfig(cacheNames = {"storyRequests"})
 public class RelationshipMatcherServiceImpl implements RelationshipMatcherService {
 
     private static final String EXTRA_URL = "https://anapioficeandfire.com/api/characters";
@@ -42,7 +45,7 @@ public class RelationshipMatcherServiceImpl implements RelationshipMatcherServic
     public void setOKHttpGameOfThronesClient(OKHttpGameOfThronesClientImpl client) {
         this.client = client;
     }
-
+    @Cacheable
     @Override
     public RelationShipUUIDResponse findRelationshipBetweenCharacters(String name1, String name2) {
         GameCharacter gameCharacter = getCharacterInfo(name1);
@@ -117,7 +120,6 @@ public class RelationshipMatcherServiceImpl implements RelationshipMatcherServic
         } catch (IOException e) {
             log.info("Http request fail " + e);
         }
-        System.out.println(fetchCharacterData);
         GameCharacter gameCharacter = parseJson(fetchCharacterData);
         if (gameCharacter == null) {
             throw new GameCharacterNotFoundException("name: " + name);

@@ -11,9 +11,13 @@ import java.util.UUID;
 
 public interface RelationshipMatcherService {
     RelationShipUUIDResponse findRelationshipBetweenCharacters(String name1, String name2);
+
     Relationship checkFamilyRelationships(GameCharacter character, GameCharacter character2);
+
     GameCharacter getCharacterInfo(String name) throws IOException;
+
     List<GetRelationShipResponse> getFullRelationshipStory();
+
     GetRelationShipResponse getRelationShipStory(UUID id);
 
 }
