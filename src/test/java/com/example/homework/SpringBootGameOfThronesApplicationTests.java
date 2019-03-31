@@ -1,4 +1,4 @@
-package com.example.SpringBoot_GameOfThrones;
+package com.example.homework;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
