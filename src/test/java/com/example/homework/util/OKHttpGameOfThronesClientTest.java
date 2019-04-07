@@ -1,12 +1,10 @@
 package com.example.homework.util;
 
 import com.example.homework.util.utilImpl.OKHttpGameOfThronesClientImpl;
-import okhttp3.*;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
-import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.io.IOException;
@@ -15,8 +13,6 @@ import static org.hamcrest.core.Is.is;
 
 
 public class OKHttpGameOfThronesClientTest {
-    @Mock
-    OkHttpClient client;
     @InjectMocks
     OKHttpGameOfThronesClientImpl unit;
 
@@ -32,16 +28,4 @@ public class OKHttpGameOfThronesClientTest {
         Assert.assertThat(unit.fetchCharacterData(requestUrl), is(expected));
     }
 
-//    @Test(expected = IOException.class)
-//    public void whenFetchCharacterDataThrowIOException() throws IOException {
-//        String requestUrl = "https://anapioficeandfire.com/api/characters?name=Aemma%20Arryn";
-//        Request request = new Request.Builder()
-//                .url(requestUrl)
-//                .build();
-//        Response response = new Response.Builder().code(404)
-//                .request(request).protocol(Protocol.HTTP_1_1).message("NOT_FOUND").build();
-//        response.i
-//            when(client.newCall(request).execute()).thenReturn(response);
-//            unit.fetchCharacterData(requestUrl);
-//    }
 }
