@@ -5,7 +5,7 @@ This app displays relationship within two characters from [API of Ice And Fire](
 This is the world's greatest source for quantified and structured data from the universe of Ice and Fire.
 If you are interested in the marital status of your favorite hero, feel free to check it out here.
 ## Getting Started!
-This sample uses the Gradle build system. To build this project, use the "gradlew build" command or use "Import Project" in IntelliJ IDEA.
+This sample uses the Gradle build system. To build this project, use the "gradle build" command or use "Import Project" in IntelliJ IDEA.
 ## Technologies
 - Java 8
 - Spring (Boot+Web+Data+Test)
