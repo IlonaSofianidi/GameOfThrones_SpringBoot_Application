@@ -1,5 +1,5 @@
 package com.example.homework.entity;
 
 public enum Relationship {
-    FATHER,MOTHER,SPOUSE,NONE
+    FATHER, MOTHER, SPOUSE, NONE
 }

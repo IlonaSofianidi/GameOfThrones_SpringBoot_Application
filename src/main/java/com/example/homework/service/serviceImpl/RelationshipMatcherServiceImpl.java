@@ -1,5 +1,6 @@
 package com.example.homework.service.serviceImpl;
 
+import com.example.homework.config.WebProperties;
 import com.example.homework.entity.GameCharacter;
 import com.example.homework.entity.RelationStory;
 import com.example.homework.entity.Relationship;
@@ -17,13 +18,13 @@ import okhttp3.HttpUrl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheConfig;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.PostConstruct;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -32,9 +33,15 @@ import java.util.regex.Pattern;
 @CacheConfig(cacheNames = {"storyRequests"})
 public class RelationshipMatcherServiceImpl implements RelationshipMatcherService {
 
-    private static final String EXTRA_URL = "https://anapioficeandfire.com/api/characters";
+    private String extraUrl;
+    private WebProperties webProperties;
     private RelationStoryRepository relationStoryRepository;
     private OKHttpGameOfThronesClient client;
+
+    @Autowired
+    public void setWebProperties(WebProperties webProperties) {
+        this.webProperties = webProperties;
+    }
 
     @Autowired
     public void setRelationStoryRepository(RelationStoryRepository relationStoryRepository) {
@@ -45,20 +52,33 @@ public class RelationshipMatcherServiceImpl implements RelationshipMatcherServic
     public void setOKHttpGameOfThronesClient(OKHttpGameOfThronesClientImpl client) {
         this.client = client;
     }
+
+    @PostConstruct
+    public void initProp() {
+        extraUrl = webProperties.gameOfThronesUrl;
+    }
+
     @Cacheable
     @Override
-    public RelationShipUUIDResponse findRelationshipBetweenCharacters(String name1, String name2) {
-        GameCharacter gameCharacter = getCharacterInfo(name1);
-        GameCharacter gameCharacter2 = getCharacterInfo(name2);
-        Relationship relationship = checkFamilyRelationships(gameCharacter, gameCharacter2);
-        String msg = String.format("GameCharacter %s and GameCharacter %s RelationShip: %s", gameCharacter.getName(), gameCharacter2.getName(), relationship);
-        log.info(msg);
-        RelationStory relationStory = createRelationStory(gameCharacter, gameCharacter2, relationship);
-        RelationStory save = relationStoryRepository.save(relationStory);
-        return RelationShipUUIDResponse.builder()
-                .characterName1(name1)
-                .characterName2(name2)
-                .id(save.getId()).build();
+    public List<RelationShipUUIDResponse> findRelationshipBetweenCharacters(String name1, String name2) {
+        List<RelationShipUUIDResponse> responses = new ArrayList<>();
+        GameCharacter[] gameCharacterList = getCharacterInfo(name1);
+        GameCharacter[] gameCharacter2List = getCharacterInfo(name2);
+        List<RelationStory> relationStories = checkFamilyRelationships(gameCharacterList, gameCharacter2List);
+        //save all relation stories to db
+        for (RelationStory story : relationStories) {
+            RelationStory save = relationStoryRepository.save(story);
+            String characterNameResponse1 = String.format("%s (id:%d)", story.getCharacterName1(), story.getIdCharacter1());
+            String characterNameResponse2 = String.format("%s (id:%d)", story.getCharacterName2(), story.getIdCharacter2());
+            String msg = String.format("GameCharacter %s and GameCharacter %s RelationShip: %s", characterNameResponse1, characterNameResponse2, story.getRelationship());
+            log.info(msg);
+            responses.add(RelationShipUUIDResponse.builder()
+                    .characterName1(characterNameResponse1)
+                    .characterName2(characterNameResponse2)
+                    .id(save.getId()).build());
+        }
+
+        return responses;
     }
 
     @Override
@@ -70,8 +90,9 @@ public class RelationshipMatcherServiceImpl implements RelationshipMatcherServic
         RelationStory relationStory = relationStoriesById.get();
         String story = createStoryMessage(relationStory);
         log.info("RelationStory: " + story);
-        return GetRelationShipResponse.builder().storyMessage(story).build();
+        return GetRelationShipResponse.builder().storyMessage(story).id(relationStory.getId()).build();
     }
+
 
     private RelationStory createRelationStory(GameCharacter gameCharacter, GameCharacter gameCharacter2, Relationship relationship) {
         RelationStory relationStory = new RelationStory();
@@ -85,34 +106,36 @@ public class RelationshipMatcherServiceImpl implements RelationshipMatcherServic
         return relationStory;
     }
 
-    @Override
-    public List<GetRelationShipResponse> getFullRelationshipStory() {
-        List<RelationStory> all = relationStoryRepository.findAll();
-        List<GetRelationShipResponse> responses = new ArrayList<>();
-        for (RelationStory story : all) {
-            String storyMsg = createStoryMessage(story);
-            log.info("RelationStory: " + story);
-            responses.add(GetRelationShipResponse.builder().storyMessage(storyMsg).build());
+    public Page<RelationStory> getFullRelationshipStoryTest(Pageable pageable) {
+        Page<RelationStory> allBy = relationStoryRepository.findAllBy(pageable);
+        return allBy;
+
+    }
+
+    public List<RelationStory> checkFamilyRelationships(GameCharacter[] gameCharacter, GameCharacter[] gameCharacter2) {
+        List<RelationStory> list = new ArrayList<>();
+        //take all characters with the same name from list 1
+        for (GameCharacter character1 : gameCharacter) {
+            //get url of each characters
+            String urlCharacter = character1.getUrl();
+            //match relationship with each character with the same name from list 2
+            for (GameCharacter character2 : gameCharacter2) {
+                if (character2.getFather().equals(urlCharacter)) {
+                    list.add(createRelationStory(character1, character2, Relationship.FATHER));
+                } else if (character2.getMother().equals(urlCharacter)) {
+                    list.add(createRelationStory(character1, character2, Relationship.MOTHER));
+                } else if (character2.getSpouse().equals(urlCharacter)) {
+                    list.add(createRelationStory(character1, character2, Relationship.SPOUSE));
+                } else {
+                    list.add(createRelationStory(character1, character2, Relationship.NONE));
+                }
+            }
         }
-        return responses;
+        return list;
     }
 
     @Override
-    public Relationship checkFamilyRelationships(GameCharacter gameCharacter, GameCharacter gameCharacter2) {
-        String urlCharacter = gameCharacter.getUrl();
-        if (gameCharacter2.getFather().equals(urlCharacter)) {
-            return Relationship.FATHER;
-        } else if (gameCharacter2.getMother().equals(urlCharacter)) {
-            return Relationship.MOTHER;
-        } else if (gameCharacter2.getSpouse().equals(urlCharacter)) {
-            return Relationship.SPOUSE;
-        } else {
-            return Relationship.NONE;
-        }
-    }
-
-    @Override
-    public GameCharacter getCharacterInfo(String name) {
+    public GameCharacter[] getCharacterInfo(String name) {
         String userRequest = createUserRequest(name);
         String fetchCharacterData = null;
         try {
@@ -120,49 +143,44 @@ public class RelationshipMatcherServiceImpl implements RelationshipMatcherServic
         } catch (IOException e) {
             log.info("Http request fail " + e);
         }
-        GameCharacter gameCharacter = parseJson(fetchCharacterData);
-        if (gameCharacter == null) {
+        GameCharacter[] gameCharacters = parseJson(fetchCharacterData);
+        if (gameCharacters == null || gameCharacters.length == 0) {
             throw new GameCharacterNotFoundException("name: " + name);
         }
-        log.info("Get character info: " + gameCharacter.toString());
-        return gameCharacter;
+        log.info("Get character info,fetch characters: " + Arrays.toString(gameCharacters));
+        return gameCharacters;
     }
 
     private String createStoryMessage(RelationStory story) {
         String msg = null;
         if (story.getRelationship() == Relationship.NONE) {
-            msg = String.format("GameCharacter %s(%d) and GameCharacter%s(%d) no relationship found [ UUID: %s]", story.getCharacterName1(), story.getIdCharacter1(), story.getCharacterName2(),
-                    story.getIdCharacter2(), story.getId().toString());
+            msg = String.format("GameCharacter %s(%d) and GameCharacter%s(%d) no relationship found", story.getCharacterName1(), story.getIdCharacter1(), story.getCharacterName2(),
+                    story.getIdCharacter2());
         } else {
-            msg = String.format("GameCharacter %s(%d) is %s to GameCharacter%s(%d) [UUID:%s ]", story.getCharacterName1(),
+            msg = String.format("GameCharacter %s(%d) is %s to GameCharacter%s(%d)", story.getCharacterName1(),
                     story.getIdCharacter1(), story.getRelationship().toString(),
-                    story.getCharacterName2(), story.getIdCharacter2(), story.getId().toString());
+                    story.getCharacterName2(), story.getIdCharacter2());
         }
         return msg;
     }
 
     private String createUserRequest(String name) {
-        HttpUrl.Builder urlBuilder = HttpUrl.parse(EXTRA_URL).newBuilder();
+        HttpUrl.Builder urlBuilder = HttpUrl.parse(extraUrl).newBuilder();
         urlBuilder.addQueryParameter("name", name);
         String url = urlBuilder.build().toString();
         log.info("UserRequest: " + url);
         return url;
     }
 
-    private GameCharacter parseJson(String json) {
+    private GameCharacter[] parseJson(String json) {
         ObjectMapper objectMapper = new ObjectMapper();
-        GameCharacter[] gameCharacter = null; //if there are some characters return first
+        GameCharacter[] gameCharacter = null; //if there are some characters with the same name
         try {
             gameCharacter = objectMapper.readValue(json, GameCharacter[].class);
         } catch (IOException e) {
             log.info("Fail to parse json " + e);
         }
-        if (gameCharacter != null && gameCharacter.length > 0) {
-            return gameCharacter[0];
-        } else {
-            return null;
-        }
-
+        return gameCharacter;
     }
 
     private int parseUrlId(String url) {
