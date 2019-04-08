@@ -3,6 +3,7 @@ package com.example.homework.controller;
 import com.example.homework.config.WebProperties;
 import com.example.homework.entity.RelationStory;
 import com.example.homework.entity.Relationship;
+import com.example.homework.exception.GameCharacterNotFoundException;
 import com.example.homework.exception.RelationShipStoryNotFound;
 import com.example.homework.service.serviceImpl.RelationshipMatcherServiceImpl;
 import com.example.homework.util.utilImpl.RelationShipResourceAssembler;
@@ -20,19 +21,17 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import org.springframework.web.bind.MissingServletRequestParameterException;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.hamcrest.Matchers.containsString;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -52,9 +51,7 @@ public class MainControllerTest {
     @InjectMocks
     @Autowired
     MainController unit;
-
     private MockMvc mockMvc;
-
 
     @Before
     public void setUp() {
@@ -64,8 +61,9 @@ public class MainControllerTest {
                 .setControllerAdvice(new GameCharacterControllerAdvise())
                 .build();
     }
+
     @Test
-    public void contexLoads() throws Exception {
+    public void contexLoads() {
         assertThat(unit).isNotNull();
     }
 
@@ -91,10 +89,29 @@ public class MainControllerTest {
 
     @Test
     public void whenPostGameCharactersToFindRelationShipParameterIsEmptyReturnBadRequest() throws Exception {
-        this.mockMvc.perform(post("/api/v1/stories/")
+        String expected = "Required String parameter 'name2' is not present";
+        MockHttpServletResponse response = this.mockMvc.perform(post("/api/v1/stories/")
                 .param("name1", "Alice"))
                 .andDo(print()).andExpect(status().isBadRequest())
-                .andExpect(status().reason(containsString("Required String parameter 'name2' is not present")));
+                .andReturn().getResponse();
+
+        assertThat(response.getContentType()).isEqualTo("application/json;charset=UTF-8");
+        assertThat(response.getContentAsString()).contains(expected);
+
+    }
+
+    @Test
+    public void whenPostGameCharactersToFindRelationShipReturnNotFound() throws Exception {
+        String expected = "name: Bob";
+        when(relationshipMatcherService.findRelationshipBetweenCharacters(anyString(), anyString()))
+                .thenThrow(new GameCharacterNotFoundException(expected));
+        MockHttpServletResponse response = this.mockMvc.perform(post("/api/v1/stories/")
+                .param("name1", "Alice")
+                .param("name2", "Bob"))
+
+                .andReturn().getResponse();
+        assertThat(response.getContentType()).isEqualTo("application/json;charset=UTF-8");
+        assertThat(response.getContentAsString()).contains(expected);
     }
 
     @Test
@@ -116,9 +133,21 @@ public class MainControllerTest {
 
     }
 
+    @Test
+    public void whenGetRelationShipResultBtIdNotFoundReturnStatusNotFound() throws Exception {
+        UUID id = UUID.fromString("0b6d6fbd-c911-4c01-b5d0-0ff5b319f9c3");
+        String expected = "UUID: 0b6d6fbd-c911-4c01-b5d0-0ff5b319f9c3";
+        when(unit.getRelationShipResultsById(id)).thenThrow(new RelationShipStoryNotFound(expected));
+        MockHttpServletResponse response = this.mockMvc.perform(get("/api/v1/stories/{relationStoryId}", id))
+                .andDo(print())
+                .andExpect(status().isNotFound())
+                .andReturn().getResponse();
+        assertThat(response.getContentType()).isEqualTo("application/json;charset=UTF-8");
+        assertThat(response.getContentAsString()).contains(expected);
+    }
 
     @Test
-    public void getRelationShipResults() throws Exception {
+    public void whenGetRelationShipResultsListByPageableParametresReturnStatusOkAndPageableResponse() throws Exception {
         UUID id = UUID.fromString("0b6d6fbd-c911-4c01-b5d0-0ff5b319f9c3");
         List<RelationStory> list = new ArrayList<>();
         RelationStory relationStory = new RelationStory();
@@ -147,13 +176,4 @@ public class MainControllerTest {
         assertThat(pageable.getPageSize()).isEqualTo(5);
     }
 
-    @Test
-    public void whenGetRelationShipNotFoundReturnStatusNotFound() throws Exception {
-        UUID id = UUID.fromString("0b6d6fbd-c911-4c01-b5d0-0ff5b319f9c3");
-        when(unit.getRelationShipResultsById(id)).thenThrow(new RelationShipStoryNotFound(id.toString()));
-        this.mockMvc.perform(get("/api/v1/stories/{relationStoryId}", id))
-                .andDo(print())
-                .andExpect(status().isNotFound())
-                .andReturn().getResponse();
-    }
 }
