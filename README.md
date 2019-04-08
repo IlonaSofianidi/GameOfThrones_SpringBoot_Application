@@ -57,11 +57,7 @@ The API will automatically paginate the responses.
 http://localhost:8080/stories
 ```
 Return value:HTTP status 200(OK)
-### Get all relationstories with pagination parametres
-You can also create requests with pagination parameters and consume the response.
-```sh
-http://localhost:8080/stories/?page=1&size=5
-```
+
 JSON example
 ```sh
 {
@@ -149,6 +145,12 @@ JSON example
 }
 ```
 Return value:HTTP status 200(OK)
+
+### Get all relationstories with pagination parametres
+You can also create requests with pagination parameters and consume the response.
+```sh
+http://localhost:8080/stories/?page=1&size=5
+```
 
 # Author
 **Ilona Sofianidi**
