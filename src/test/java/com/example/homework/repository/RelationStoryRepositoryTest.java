@@ -28,7 +28,7 @@ public class RelationStoryRepositoryTest {
     private TestEntityManager entityManager;
 
     @Test
-    public void whenGetRelationStoryByIdrReturnRelationStory() {
+    public void whenGetRelationStoryByIdReturnRelationStory() {
         RelationStory relationStory = new RelationStory();
         relationStory.setCharacterName1("Alice");
         relationStory.setCharacterName2("Bob");
