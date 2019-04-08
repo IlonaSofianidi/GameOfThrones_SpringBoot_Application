@@ -177,6 +177,7 @@ public class RelationshipMatcherServiceImplTest {
         unit.getRelationShipStory(id);
 
     }
+
     private GameCharacter[] createOneElementArray1() {
         GameCharacter gameCharacter1 = new GameCharacter();
         gameCharacter1.setName("Aemma Arryn");
