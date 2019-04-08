@@ -66,8 +66,7 @@ public class MainController {
         // Evaluate page size. If requested parameter is null, return initial
         int evalPageSize = size.orElse(INITIAL_PAGE_SIZE);
         // Evaluate page. If requested parameter is null or less than 0 (to
-        // prevent exception), return initial size. Otherwise, return value of
-        // param. decreased by 1.
+        // prevent exception), return initial size.
         int evalPage = (page.orElse(0) < 1) ? INITIAL_PAGE : page.get();
 
         Page<RelationStory> stories = relationshipMatcherService.getFullRelationshipStoryTest(PageRequest.of(evalPage, evalPageSize));
