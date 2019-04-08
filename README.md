@@ -35,7 +35,9 @@ http://localhost:8080/api/v1/stories/?name1=Daenerys Targaryen&name2=Drogo
 If there are not character with such name : HTTP status not found
 JSON example
 
-![example](/images/img3.png)
+![example](/images/img5.png)
+
+Return value: HTTP status 404 (Not Found) 
 
 ### Get relationstory by uuid
 #### GET
