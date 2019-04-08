@@ -85,7 +85,7 @@ public class RelationshipMatcherServiceImpl implements RelationshipMatcherServic
     public GetRelationShipResponse getRelationShipStory(UUID id) {
         Optional<RelationStory> relationStoriesById = relationStoryRepository.getRelationStoriesById(id);
         if (!relationStoriesById.isPresent()) {
-            throw new RelationShipStoryNotFound("UUID: " + id.toString());
+            throw new RelationShipStoryNotFound("Not Found UUID: " + id.toString());
         }
         RelationStory relationStory = relationStoriesById.get();
         String story = createStoryMessage(relationStory);
@@ -145,7 +145,7 @@ public class RelationshipMatcherServiceImpl implements RelationshipMatcherServic
         }
         GameCharacter[] gameCharacters = parseJson(fetchCharacterData);
         if (gameCharacters == null || gameCharacters.length == 0) {
-            throw new GameCharacterNotFoundException("name: " + name);
+            throw new GameCharacterNotFoundException("Not found GameCharacter name: " + name);
         }
         log.info("Get character info,fetch characters: " + Arrays.toString(gameCharacters));
         return gameCharacters;
