@@ -13,12 +13,11 @@ import static org.hamcrest.core.Is.is;
 
 
 public class OKHttpGameOfThronesClientTest {
-    @InjectMocks
     OKHttpGameOfThronesClientImpl unit;
 
     @Before
     public void setUp() {
-        MockitoAnnotations.initMocks(this);
+       unit = new OKHttpGameOfThronesClientImpl();
     }
 
     @Test
